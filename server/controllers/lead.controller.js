@@ -110,6 +110,18 @@ export const submitLead = async (req, res) => {
       });
     }
 
+    // Regulatory safeguard: a scheme can offer less than 75% LTV, but never more.
+    const schemeLtv = Number(loanScheme.max_ltv);
+
+    if (!Number.isFinite(schemeLtv) || schemeLtv <= 0) {
+      return res.status(500).json({
+        success: false,
+        message: "Loan scheme has an invalid LTV configuration",
+      });
+    }
+
+    const appliedLtv = Math.min(schemeLtv, 75);
+
 
     // 7. Calculate loan details
     const goldPricePerGram = Number(
@@ -120,7 +132,7 @@ export const submitLead = async (req, res) => {
       netWeight,
       purity,
       goldPricePerGram,
-      loanScheme.max_ltv
+      appliedLtv
     );
 
 
