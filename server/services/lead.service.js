@@ -28,7 +28,7 @@ export const getLoanSchemeByCode = async (planCode) => {
     .from("loan_schemes")
     .select("*")
     .eq("plan_code", planCode)
-    .single();
+    .maybeSingle();
 
   if (error) {
     throw new Error(error.message);
@@ -48,7 +48,9 @@ export const createLead = async (leadData) => {
     .single();
 
   if (error) {
-    throw new Error(error.message);
+    const databaseError = new Error(error.message);
+    databaseError.code = error.code;
+    throw databaseError;
   }
 
   return data;
@@ -74,4 +76,4 @@ export const getAllLeads = async () => {
   }
 
   return data;
-};  
+};

@@ -23,7 +23,7 @@ A full-stack lead-intake portal for preliminary gold loan offers. Partners or pr
 
 - Node.js 18 or newer
 - npm
-- A Supabase project containing `loan_schemes` and `leads` tables
+- A Supabase project
 
 ## Environment configuration
 
@@ -43,6 +43,13 @@ VITE_API_URL=http://localhost:5000/api/v1
 ```
 
 Never commit either environment file.
+
+### Database setup
+
+In the Supabase SQL Editor, run
+[`server/database/migrations/001_initial_schema.sql`](server/database/migrations/001_initial_schema.sql).
+It creates the required tables, adds the Bullet and Monthly EMI plans, and
+installs the database-side seven-day duplicate guard.
 
 ## Run locally
 
@@ -76,7 +83,7 @@ npm run preview
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| GET | `/api/v1/loan-schemes` | Returns available loan schemes. |
+| GET | `/api/v1/loan-schemes` | Returns available loan schemes and the configured gold price per gram. |
 | POST | `/api/v1/leads/submit` | Validates and creates a loan lead. |
 | GET | `/api/v1/leads` | Returns submitted leads with their selected plans. |
 
@@ -102,6 +109,7 @@ npm run preview
 - Pure gold weight is calculated as `net weight × (karat / 24)`.
 - The applied LTV is capped at 75%, even if a database scheme has a higher value.
 - The same mobile number cannot submit another application within seven days.
+- The database enforces the seven-day rule atomically, including simultaneous submissions.
 
 ## Project structure
 

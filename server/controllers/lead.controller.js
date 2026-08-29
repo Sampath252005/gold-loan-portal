@@ -23,7 +23,8 @@ export const submitLead = async (req, res) => {
 
     // 1. Check required fields
     if (
-      !customerName ||
+      typeof customerName !== "string" ||
+      !customerName.trim() ||
       !mobileNumber ||
       grossWeightGrams === undefined ||
       netWeightGrams === undefined ||
@@ -40,7 +41,7 @@ export const submitLead = async (req, res) => {
     // 2. Mobile number validation
     const mobileRegex = /^[0-9]{10}$/;
 
-    if (!mobileRegex.test(mobileNumber)) {
+    if (typeof mobileNumber !== "string" || !mobileRegex.test(mobileNumber)) {
       return res.status(400).json({
         success: false,
         message: "Mobile number must contain exactly 10 digits",
@@ -56,8 +57,8 @@ export const submitLead = async (req, res) => {
 
     // 3. Validate weights
     if (
-      Number.isNaN(grossWeight) ||
-      Number.isNaN(netWeight) ||
+      !Number.isFinite(grossWeight) ||
+      !Number.isFinite(netWeight) ||
       grossWeight <= 0 ||
       netWeight <= 0
     ) {
@@ -67,7 +68,6 @@ export const submitLead = async (req, res) => {
       });
     }
 
-  console.log(netWeight,grossWeight);   
     // Net weight cannot be greater than gross weight
     if (netWeight > grossWeight) {
       return res.status(400).json({
@@ -124,9 +124,14 @@ export const submitLead = async (req, res) => {
 
 
     // 7. Calculate loan details
-    const goldPricePerGram = Number(
-      process.env.GOLD_PRICE_PER_GRAM
-    );
+    const goldPricePerGram = Number(process.env.GOLD_PRICE_PER_GRAM);
+
+    if (!Number.isFinite(goldPricePerGram) || goldPricePerGram <= 0) {
+      return res.status(500).json({
+        success: false,
+        message: "Gold price is not configured correctly",
+      });
+    }
 
     const loanDetails = calculateLoanDetails(
       netWeight,
@@ -165,6 +170,15 @@ export const submitLead = async (req, res) => {
 
   } catch (error) {
     console.error("Submit lead error:", error);
+
+    // The database trigger is the concurrency-safe final duplicate guard.
+    if (error.code === "P0001" && error.message === "RECENT_LEAD_EXISTS") {
+      return res.status(409).json({
+        success: false,
+        message:
+          "An application already exists for this mobile number within the last 7 days",
+      });
+    }
 
     return res.status(500).json({
       success: false,
